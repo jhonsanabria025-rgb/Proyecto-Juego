@@ -15,10 +15,13 @@
 
 <main id="juego">
 
-  <!-- Marcador de piezas (se muestra durante el juego) -->
+  <!-- Marcador de piezas y cronómetro (se muestra durante la partida) -->
   <header id="marcador">
     <div class="piezas" id="piezas"></div>
-    <div class="nivel-info" id="nivel-info"></div>
+    <div class="info-lado">
+      <div class="nivel-info" id="nivel-info"></div>
+      <div class="cronometro" id="cronometro">⏱ 0:00</div>
+    </div>
   </header>
 
   <!-- PANTALLA 1: inicio -->
@@ -26,10 +29,28 @@
     <div class="senal" id="senal-inicio"></div>
     <h1 class="titulo">Señal de Zyrra</h1>
     <p class="subtitulo">Tu nave cayó en un planeta desconocido. Los habitantes te dejaron mensajes tallados en piedra. Aprende sus símbolos, responde bien y te devolverán las tres piezas que necesitas para despegar.</p>
-    <button class="btn" id="btn-jugar">Empezar la misión</button>
+    <div class="acciones">
+      <button class="btn" id="btn-jugar">Empezar la misión</button>
+      <button class="btn secundario" id="btn-ver-clasif-inicio">Ver clasificación</button>
+    </div>
   </section>
 
-  <!-- PANTALLA 2: aprender los símbolos -->
+  <!-- PANTALLA 2: apodo del jugador -->
+  <section class="pantalla" id="nombre">
+    <div class="losa">
+      <h2>¿Cómo te llamas, explorador?</h2>
+      <p class="guia">Tu apodo aparecerá en la clasificación junto a tu puntaje. Cuanto más rápido y mejor respondas, más puntos ganas.</p>
+      <label class="campo-etiqueta" for="input-nombre">Tu apodo (2 a 20 caracteres)</label>
+      <input class="campo" id="input-nombre" type="text" maxlength="20" autocomplete="nickname" spellcheck="false" placeholder="Escribe tu apodo">
+      <p class="aviso mal" id="nombre-aviso"></p>
+      <div class="pie">
+        <button class="btn secundario" id="btn-nombre-atras">Atrás</button>
+        <button class="btn" id="btn-nombre-ok">Empezar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 3: aprender los símbolos -->
   <section class="pantalla" id="aprender">
     <div class="losa">
       <h2 id="aprender-titulo"></h2>
@@ -42,7 +63,7 @@
     </div>
   </section>
 
-  <!-- PANTALLA 3: preguntas -->
+  <!-- PANTALLA 4: preguntas -->
   <section class="pantalla" id="preguntar">
     <div class="losa">
       <p class="enunciado" id="enunciado"></p>
@@ -56,7 +77,7 @@
     </div>
   </section>
 
-  <!-- PANTALLA 4: pieza conseguida -->
+  <!-- PANTALLA 5: pieza conseguida -->
   <section class="pantalla" id="recompensa">
     <div class="losa" style="text-align:center">
       <div id="recompensa-icono" style="color:var(--jade)"></div>
@@ -66,7 +87,7 @@
     </div>
   </section>
 
-  <!-- PANTALLA 5: final -->
+  <!-- PANTALLA 6: final -->
   <section class="pantalla" id="final">
     <div class="losa">
       <h2 id="final-titulo"></h2>
@@ -78,7 +99,30 @@
         <path id="llama" d="M48 104h24l-12 34-12-34Z" stroke="var(--coral)" opacity="0"/>
       </svg>
       <p class="puntaje" id="final-puntaje"></p>
-      <button class="btn" id="btn-reiniciar">Jugar otra vez</button>
+      <p class="detalle" id="final-detalle"></p>
+      <p class="aviso" id="final-guardado"></p>
+      <div class="acciones">
+        <button class="btn secundario" id="btn-reintentar" hidden>Reintentar guardado</button>
+        <button class="btn" id="btn-ver-clasif-final">Ver clasificación</button>
+        <button class="btn secundario" id="btn-reiniciar">Jugar otra vez</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 7: clasificación -->
+  <section class="pantalla" id="clasificacion">
+    <div class="losa">
+      <h2>Clasificación</h2>
+      <p class="guia">Los 10 mejores exploradores. Se actualiza sola en vivo. Si hay empate en puntos, gana quien tardó menos.</p>
+      <div class="fila cab" aria-hidden="true">
+        <span class="pos">#</span><span class="nom">Explorador</span><span class="pts">Puntos</span><span class="tmp">Tiempo</span>
+      </div>
+      <ol class="tabla" id="tabla-clasif"></ol>
+      <p class="aviso" id="clasif-estado"></p>
+      <div class="pie">
+        <button class="btn secundario" id="btn-clasif-volver">Volver</button>
+        <button class="btn" id="btn-clasif-jugar">Jugar</button>
+      </div>
     </div>
   </section>
 
@@ -92,6 +136,7 @@
   </div>
 </dialog>
 
-<script src="juego.js"></script>
+<!-- type="module": necesario para cargar Firebase. Ábrelo con Live Server, no con doble clic. -->
+<script type="module" src="juego.js"></script>
 </body>
 </html>
