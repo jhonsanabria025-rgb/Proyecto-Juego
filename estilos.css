@@ -1,0 +1,180 @@
+/* ============================================================
+   1. VARIABLES DE COLOR (los "colores oficiales" del juego)
+   ============================================================ */
+:root{
+  --fondo:        #221436;   /* violeta profundo, el espacio */
+  --fondo-2:      #16092a;
+  --losa:         #2e1a4a;   /* las tarjetas de piedra alienígena */
+  --losa-alta:    #3b2360;
+  --borde:        #5b3d8a;
+  --ambar:        #ffb547;   /* el color de los símbolos */
+  --jade:         #3fd6a8;   /* acierto */
+  --coral:        #ff6b6b;   /* error */
+  --texto:        #f3ecff;
+  --texto-suave:  #b9a6d8;
+
+  box-sizing:border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{ box-sizing:inherit; }
+
+html,body{ height:100%; margin:0; }
+body{
+  background: radial-gradient(120% 90% at 50% 0%, #38206b 0%, var(--fondo) 45%, var(--fondo-2) 100%);
+  color:var(--texto);
+  font-family:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  display:flex; flex-direction:column; align-items:center;
+  padding:16px;
+  overflow-x:hidden;
+}
+
+/* Estrellas del fondo */
+#cielo{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+
+/* ============================================================
+   2. ESTRUCTURA GENERAL
+   ============================================================ */
+#juego{
+  position:relative; z-index:1;
+  width:100%; max-width:680px;
+  margin:auto;
+  display:flex; flex-direction:column; gap:18px;
+}
+
+h1,h2,h3,.btn{ font-family:"Chakra Petch", "Nunito", sans-serif; }
+
+.pantalla{ display:none; animation:entrar .45s ease both; }
+.pantalla.activa{ display:block; }
+@keyframes entrar{ from{ opacity:0; transform:translateY(14px);} to{ opacity:1; transform:none;} }
+
+/* ============================================================
+   3. BOTONES
+   ============================================================ */
+.btn{
+  font-size:1.05rem; font-weight:700; letter-spacing:.02em;
+  color:#2a1246; background:var(--ambar);
+  border:none; border-radius:14px;
+  padding:14px 28px; cursor:pointer;
+  box-shadow:0 6px 0 #b87a1f;
+  transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.btn:hover{ filter:brightness(1.07); }
+.btn:active{ transform:translateY(4px); box-shadow:0 2px 0 #b87a1f; }
+.btn.secundario{
+  background:transparent; color:var(--texto-suave);
+  border:2px solid var(--borde); box-shadow:none; padding:10px 18px; font-size:.95rem;
+}
+.btn.secundario:hover{ color:var(--texto); border-color:var(--ambar); }
+:focus-visible{ outline:3px solid var(--jade); outline-offset:3px; }
+
+/* ============================================================
+   4. PANTALLA DE INICIO
+   ============================================================ */
+#inicio{ text-align:center; padding:24px 0; }
+.titulo{
+  font-size:clamp(2.4rem, 9vw, 4rem); line-height:.95; margin:0;
+  color:var(--ambar);
+  text-shadow:0 0 28px rgba(255,181,71,.35);
+}
+.subtitulo{ color:var(--texto-suave); font-size:1.05rem; max-width:46ch; margin:14px auto 26px; }
+.senal{ display:flex; justify-content:center; gap:14px; margin-bottom:6px; }
+.senal svg{ width:52px; height:52px; color:var(--ambar); opacity:.85; animation:latir 2.6s ease-in-out infinite; }
+.senal svg:nth-child(2){ animation-delay:.3s; }
+.senal svg:nth-child(3){ animation-delay:.6s; }
+@keyframes latir{ 0%,100%{ opacity:.35; transform:translateY(0);} 50%{ opacity:1; transform:translateY(-6px);} }
+
+/* ============================================================
+   5. BARRA DE PIEZAS (la puntuación)
+   ============================================================ */
+#marcador{ display:none; align-items:center; gap:12px; justify-content:space-between; }
+#marcador.activo{ display:flex; }
+.piezas{ display:flex; gap:10px; }
+.pieza{
+  width:46px; height:46px; border-radius:12px;
+  border:2px dashed var(--borde); color:var(--borde);
+  display:grid; place-items:center;
+  transition:all .4s ease;
+}
+.pieza svg{ width:26px; height:26px; }
+.pieza.obtenida{
+  border:2px solid var(--jade); color:var(--jade);
+  background:rgba(63,214,168,.12);
+  box-shadow:0 0 18px rgba(63,214,168,.3);
+  transform:scale(1.06);
+}
+.nivel-info{ font-size:.9rem; color:var(--texto-suave); text-align:right; }
+
+/* ============================================================
+   6. LOSAS Y TARJETAS
+   ============================================================ */
+.losa{
+  background:linear-gradient(160deg, var(--losa-alta), var(--losa));
+  border:1px solid var(--borde);
+  border-radius:20px;
+  padding:26px;
+}
+.losa h2{ margin:0 0 6px; font-size:1.5rem; color:var(--ambar); }
+.losa p.guia{ margin:0 0 20px; color:var(--texto-suave); }
+
+.glosario{ display:grid; grid-template-columns:repeat(auto-fit, minmax(130px,1fr)); gap:14px; }
+.tarjeta{
+  background:rgba(0,0,0,.22); border:1px solid var(--borde);
+  border-radius:16px; padding:16px 10px; text-align:center;
+}
+.tarjeta svg{ width:64px; height:64px; color:var(--ambar); }
+.tarjeta .palabra{ font-family:"Chakra Petch",sans-serif; font-size:1.1rem; margin-top:8px; }
+.tarjeta .sentido{ color:var(--texto-suave); font-size:.9rem; }
+
+/* ============================================================
+   7. PREGUNTAS Y RESPUESTAS
+   ============================================================ */
+.muestra{ text-align:center; margin:10px 0 24px; }
+.muestra svg{ width:110px; height:110px; color:var(--ambar); filter:drop-shadow(0 0 22px rgba(255,181,71,.35)); }
+.muestra .frase{ display:flex; justify-content:center; gap:22px; }
+.muestra .palabra-grande{
+  font-family:"Chakra Petch",sans-serif; font-size:2.2rem; color:var(--ambar); letter-spacing:.08em;
+}
+.enunciado{ font-weight:800; font-size:1.15rem; text-align:center; margin:0 0 4px; }
+
+.opciones{ display:grid; gap:12px; margin-top:8px; }
+.opcion{
+  display:flex; align-items:center; gap:14px;
+  background:rgba(0,0,0,.25); color:var(--texto);
+  border:2px solid var(--borde); border-radius:14px;
+  padding:14px 18px; font:inherit; font-weight:600; font-size:1.02rem;
+  cursor:pointer; text-align:left;
+  transition:border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.opcion:hover:not(:disabled){ border-color:var(--ambar); transform:translateX(4px); }
+.opcion svg{ width:44px; height:44px; color:var(--ambar); flex:none; }
+.opcion:disabled{ cursor:default; opacity:.55; }
+.opcion.correcta{ border-color:var(--jade); background:rgba(63,214,168,.16); opacity:1; }
+.opcion.incorrecta{ border-color:var(--coral); background:rgba(255,107,107,.14); opacity:1; animation:temblar .35s; }
+@keyframes temblar{ 25%{transform:translateX(-7px);} 50%{transform:translateX(7px);} 75%{transform:translateX(-4px);} }
+
+.aviso{ margin-top:16px; text-align:center; min-height:26px; font-weight:600; }
+.aviso.ok{ color:var(--jade); }
+.aviso.mal{ color:var(--coral); }
+.pie{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:18px; flex-wrap:wrap; }
+
+/* ============================================================
+   8. FINAL
+   ============================================================ */
+#final{ text-align:center; }
+#nave-final{ width:min(240px, 60vw); margin:10px auto 0; display:block; color:var(--ambar); }
+#nave-final.despega{ animation:despegue 2.2s ease-in forwards; }
+@keyframes despegue{ 0%{transform:translateY(0) scale(1);} 25%{transform:translateY(8px) scale(.98);} 100%{transform:translateY(-120vh) scale(.5);} }
+.puntaje{ font-family:"Chakra Petch",sans-serif; font-size:2rem; color:var(--jade); margin:6px 0; }
+
+/* Ventana del glosario */
+dialog{
+  background:var(--losa); color:var(--texto);
+  border:1px solid var(--borde); border-radius:20px; padding:24px;
+  max-width:560px; width:92%;
+}
+dialog::backdrop{ background:rgba(10,4,24,.72); }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}

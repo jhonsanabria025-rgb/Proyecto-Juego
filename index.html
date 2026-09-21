@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Señal de Zyrra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+
+<body>
+<canvas id="cielo"></canvas>
+
+<main id="juego">
+
+  <!-- Marcador de piezas (se muestra durante el juego) -->
+  <header id="marcador">
+    <div class="piezas" id="piezas"></div>
+    <div class="nivel-info" id="nivel-info"></div>
+  </header>
+
+  <!-- PANTALLA 1: inicio -->
+  <section class="pantalla activa" id="inicio">
+    <div class="senal" id="senal-inicio"></div>
+    <h1 class="titulo">Señal de Zyrra</h1>
+    <p class="subtitulo">Tu nave cayó en un planeta desconocido. Los habitantes te dejaron mensajes tallados en piedra. Aprende sus símbolos, responde bien y te devolverán las tres piezas que necesitas para despegar.</p>
+    <button class="btn" id="btn-jugar">Empezar la misión</button>
+  </section>
+
+  <!-- PANTALLA 2: aprender los símbolos -->
+  <section class="pantalla" id="aprender">
+    <div class="losa">
+      <h2 id="aprender-titulo"></h2>
+      <p class="guia" id="aprender-guia"></p>
+      <div class="glosario" id="aprender-glosario"></div>
+      <div class="pie">
+        <span></span>
+        <button class="btn" id="btn-listo">Ya los memoricé</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 3: preguntas -->
+  <section class="pantalla" id="preguntar">
+    <div class="losa">
+      <p class="enunciado" id="enunciado"></p>
+      <div class="muestra" id="muestra"></div>
+      <div class="opciones" id="opciones"></div>
+      <p class="aviso" id="aviso"></p>
+      <div class="pie">
+        <button class="btn secundario" id="btn-glosario">Ver el glosario</button>
+        <button class="btn" id="btn-siguiente" style="visibility:hidden">Siguiente</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 4: pieza conseguida -->
+  <section class="pantalla" id="recompensa">
+    <div class="losa" style="text-align:center">
+      <div id="recompensa-icono" style="color:var(--jade)"></div>
+      <h2 id="recompensa-titulo"></h2>
+      <p class="guia" id="recompensa-texto"></p>
+      <button class="btn" id="btn-continuar">Seguir</button>
+    </div>
+  </section>
+
+  <!-- PANTALLA 5: final -->
+  <section class="pantalla" id="final">
+    <div class="losa">
+      <h2 id="final-titulo"></h2>
+      <p class="guia" id="final-texto"></p>
+      <svg id="nave-final" viewBox="0 0 120 160" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M60 12c16 18 24 40 24 62v30H36V74c0-22 8-44 24-62Z"/>
+        <circle cx="60" cy="62" r="13"/>
+        <path d="M36 104 18 128h18M84 104l18 24H84"/>
+        <path id="llama" d="M48 104h24l-12 34-12-34Z" stroke="var(--coral)" opacity="0"/>
+      </svg>
+      <p class="puntaje" id="final-puntaje"></p>
+      <button class="btn" id="btn-reiniciar">Jugar otra vez</button>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="dialogo-glosario">
+  <h2 style="margin-top:0;color:var(--ambar);font-family:'Chakra Petch',sans-serif">Glosario de Zyrra</h2>
+  <div class="glosario" id="glosario-completo"></div>
+  <div style="text-align:right;margin-top:18px">
+    <button class="btn secundario" id="btn-cerrar-glosario">Cerrar</button>
+  </div>
+</dialog>
+
+<script src="js/juego.js"></script>
+</body>
+</html>
