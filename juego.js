@@ -1,4 +1,38 @@
 /* ============================================================
+   PARTE 0 — FIREBASE (la base de datos de la clasificación)
+   Se carga solo cuando hace falta. Si falla (sin internet, por
+   ejemplo), el juego sigue funcionando y solo avisa del error.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyA9BMc7_X1kisBsapxh52upwqZlRq-wlN4",
+  authDomain: "juego-70062.firebaseapp.com",
+  projectId: "juego-70062",
+  storageBucket: "juego-70062.firebasestorage.app",
+  messagingSenderId: "388412409654",
+  appId: "1:388412409654:web:45ad80a047b37d0db55597"
+};
+
+const FIREBASE_VERSION = "10.12.2";
+let promesaFirebase = null;
+
+function cargarFirebase(){
+  if(!promesaFirebase){
+    promesaFirebase = (async () => {
+      const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
+      const [modApp, fs] = await Promise.all([
+        import(`${base}/firebase-app.js`),
+        import(`${base}/firebase-firestore.js`)
+      ]);
+      const app = modApp.initializeApp(firebaseConfig);
+      return { db: fs.getFirestore(app), fs };
+    })();
+    // Si falla, permitimos volver a intentarlo más tarde
+    promesaFirebase.catch(() => { promesaFirebase = null; });
+  }
+  return promesaFirebase;
+}
+
+/* ============================================================
    PARTE A — LOS SÍMBOLOS DEL IDIOMA
    Cada símbolo es un dibujo SVG + su palabra alienígena + su significado.
    ============================================================ */
@@ -84,17 +118,25 @@ let preguntaActual = 0;
 let piezas = 0;
 let aciertosLimpios = 0;   // aciertos al primer intento
 let fallosEnPregunta = false;
+let nombreJugador = "";
 const TOTAL_PREGUNTAS = NIVELES.reduce((t,n)=>t+n.preguntas.length,0);
+
+/* Puntaje: 100 por acierto a la primera + bonus por rapidez (máximo total 1500) */
+const PUNTOS_POR_ACIERTO = 100;
+const BONUS_MAXIMO = 600;
+const SEGUNDOS_PARA_BONUS = 300;   // a los 5 minutos el bonus llega a 0
 
 const $ = (id) => document.getElementById(id);
 
 /* ============================================================
    PARTE D — CAMBIAR DE PANTALLA
    ============================================================ */
+const PANTALLAS_CON_MARCADOR = ["aprender","preguntar","recompensa","final"];
+
 function mostrar(id){
   document.querySelectorAll(".pantalla").forEach(p=>p.classList.remove("activa"));
   $(id).classList.add("activa");
-  $("marcador").classList.toggle("activo", id!=="inicio");
+  $("marcador").classList.toggle("activo", PANTALLAS_CON_MARCADOR.includes(id));
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
@@ -105,8 +147,62 @@ function pintarMarcador(){
     `<div class="pieza ${i<piezas?"obtenida":""}" title="${p.nombre}">${p.icono}</div>`
   ).join("");
   $("nivel-info").textContent = nivelActual < NIVELES.length
-    ? `${NIVELES[nivelActual].titulo}\n${preguntaActual+1} de ${NIVELES[nivelActual].preguntas.length}`
+    ? `${NIVELES[nivelActual].titulo}\nPregunta ${Math.min(preguntaActual+1, NIVELES[nivelActual].preguntas.length)} de ${NIVELES[nivelActual].preguntas.length}`
     : "Misión completa";
+}
+
+/* ============================================================
+   PARTE D2 — CRONÓMETRO
+   ============================================================ */
+let inicioJuego = 0;
+let temporizador = null;
+
+function formatoTiempo(segundos){
+  const m = Math.floor(segundos / 60);
+  const s = Math.floor(segundos % 60);
+  return `${m}:${String(s).padStart(2,"0")}`;
+}
+
+function arrancarCronometro(){
+  detenerCronometro();
+  inicioJuego = performance.now();
+  $("cronometro").textContent = "⏱ 0:00";
+  temporizador = setInterval(() => {
+    $("cronometro").textContent = "⏱ " + formatoTiempo((performance.now() - inicioJuego) / 1000);
+  }, 250);
+}
+
+function detenerCronometro(){
+  if(temporizador){ clearInterval(temporizador); temporizador = null; }
+}
+
+function calcularPuntaje(aciertos, tiempo){
+  const base = aciertos * PUNTOS_POR_ACIERTO;
+  const rapidez = Math.max(0, 1 - tiempo / SEGUNDOS_PARA_BONUS);
+  const bonus = Math.round(BONUS_MAXIMO * (aciertos / TOTAL_PREGUNTAS) * rapidez);
+  return base + bonus;
+}
+
+/* ============================================================
+   PARTE D3 — EL APODO DEL JUGADOR
+   ============================================================ */
+function abrirNombre(){
+  try{ $("input-nombre").value = localStorage.getItem("zyrra-nombre") || nombreJugador || ""; }
+  catch(e){ $("input-nombre").value = nombreJugador; }
+  $("nombre-aviso").textContent = "";
+  mostrar("nombre");
+  setTimeout(() => $("input-nombre").focus(), 60);
+}
+
+function confirmarNombre(){
+  const limpio = $("input-nombre").value.trim().replace(/\s+/g, " ").slice(0, 20);
+  if(limpio.length < 2){
+    $("nombre-aviso").textContent = "Escribe un apodo de al menos 2 caracteres.";
+    return;
+  }
+  nombreJugador = limpio;
+  try{ localStorage.setItem("zyrra-nombre", limpio); }catch(e){}
+  comenzarPartida();
 }
 
 /* ============================================================
@@ -157,7 +253,7 @@ function abrirPregunta(){
     $("opciones").innerHTML = mezclar([...p.opciones]).map(op =>
       `<button class="opcion" data-valor="${op}">${SIMBOLOS[op].svg}<span>Opción</span></button>`
     ).join("");
-    // quitamos la palabra "Opción" y dejamos solo el dibujo
+    // reemplazamos "Opción" por una letra A, B, C
     document.querySelectorAll("#opciones .opcion span").forEach((s,i)=> s.textContent = ["A","B","C"][i]);
   }
   else {
@@ -231,29 +327,208 @@ function continuar(){
 }
 
 /* ============================================================
-   PARTE G — FINAL
+   PARTE G — COMENZAR, TERMINAR Y GUARDAR EL PUNTAJE
    ============================================================ */
+let registroPendiente = null;   // el puntaje que falta por guardar
+let guardando = false;
+let miId = null;                // id de mi puntaje en la base de datos
+let timeoutDespegue = null;
+
+function comenzarPartida(){
+  nivelActual = 0; preguntaActual = 0; piezas = 0; aciertosLimpios = 0;
+  fallosEnPregunta = false;
+  registroPendiente = null; miId = null;
+  clearTimeout(timeoutDespegue);
+  $("nave-final").classList.remove("despega");
+  $("llama").style.opacity = "0";
+  arrancarCronometro();
+  abrirNivel();
+}
+
 function terminar(){
+  detenerCronometro();
+  const tiempo = Math.max(0.1, Math.round((performance.now() - inicioJuego) / 100) / 10);
+  const puntaje = calcularPuntaje(aciertosLimpios, tiempo);
   const perfecto = aciertosLimpios === TOTAL_PREGUNTAS;
+
   $("final-titulo").textContent = "La nave está reparada";
   $("final-texto").textContent = perfecto
     ? "Encajaste las tres piezas sin equivocarte ni una vez. Los de Zyrra levantan la mano: eso significa adiós."
     : "Las tres piezas encajan. El motor ruge y Zyrra se queda abajo, cada vez más pequeño.";
-  $("final-puntaje").textContent = `${aciertosLimpios} de ${TOTAL_PREGUNTAS} a la primera`;
+  $("final-puntaje").textContent = `${puntaje} puntos`;
+  const record = guardarRecord(puntaje);
+  $("final-detalle").textContent =
+    `${aciertosLimpios} de ${TOTAL_PREGUNTAS} a la primera · ${formatoTiempo(tiempo)} · Tu mejor: ${record}`;
   mostrar("final");
-  setTimeout(()=>{
+
+  timeoutDespegue = setTimeout(()=>{
     $("llama").style.opacity = "1";
     $("nave-final").classList.add("despega");
     sonido("despegue");
   }, 900);
-  guardarRecord(aciertosLimpios);
+
+  registroPendiente = { nombre: nombreJugador, puntaje, aciertos: aciertosLimpios, tiempo };
+  enviarPuntaje();
 }
 
-function reiniciar(){
-  nivelActual = 0; preguntaActual = 0; piezas = 0; aciertosLimpios = 0;
-  $("nave-final").classList.remove("despega");
-  $("llama").style.opacity = "0";
-  abrirNivel();
+function estadoGuardado(texto, clase){
+  $("final-guardado").textContent = texto;
+  $("final-guardado").className = "aviso " + clase;
+}
+
+async function enviarPuntaje(){
+  if(!registroPendiente || guardando) return;
+  guardando = true;
+  $("btn-reintentar").hidden = true;
+  estadoGuardado("Guardando tu puntaje…", "");
+
+  // Si tarda mucho (sin conexión), avisamos sin cortar el intento
+  const aviso = setTimeout(() => {
+    if(guardando) estadoGuardado("Sigue intentando… revisa tu conexión a internet.", "");
+  }, 8000);
+
+  try{
+    const { db, fs } = await cargarFirebase();
+    const ref = await fs.addDoc(fs.collection(db, "puntajes"), {
+      ...registroPendiente,
+      fecha: fs.serverTimestamp()
+    });
+    miId = ref.id;
+    registroPendiente = null;
+    estadoGuardado("Puntaje guardado en la clasificación.", "ok");
+  }catch(e){
+    console.error("Error al guardar el puntaje:", e);
+    const permisos = e && e.code === "permission-denied";
+    estadoGuardado(
+      permisos
+        ? "Firestore rechazó el puntaje. Revisa que las reglas estén publicadas."
+        : "No se pudo guardar el puntaje. Revisa tu conexión y reintenta.",
+      "mal"
+    );
+    $("btn-reintentar").hidden = false;
+  }finally{
+    clearTimeout(aviso);
+    guardando = false;
+  }
+}
+
+/* Guardar el mejor puntaje en este navegador */
+function guardarRecord(puntaje){
+  try{
+    const previo = Number(localStorage.getItem("zyrra-record") || 0);
+    if(puntaje > previo){
+      localStorage.setItem("zyrra-record", String(puntaje));
+      return puntaje;
+    }
+    return previo;
+  }catch(e){
+    return puntaje;
+  }
+}
+
+/* ============================================================
+   PARTE G2 — CLASIFICACIÓN EN VIVO
+   ============================================================ */
+let cancelarSuscripcion = null;
+let origenClasificacion = "inicio";
+let tokenClasificacion = 0;
+
+function estadoClasif(texto, clase){
+  $("clasif-estado").textContent = texto;
+  $("clasif-estado").className = "aviso " + (clase || "");
+}
+
+function cerrarSuscripcion(){
+  if(cancelarSuscripcion){ cancelarSuscripcion(); cancelarSuscripcion = null; }
+}
+
+async function abrirClasificacion(origen){
+  origenClasificacion = origen;
+  const token = ++tokenClasificacion;
+  cerrarSuscripcion();
+  $("tabla-clasif").innerHTML = "";
+  estadoClasif("Cargando la clasificación…", "");
+  mostrar("clasificacion");
+
+  try{
+    const { db, fs } = await cargarFirebase();
+    if(token !== tokenClasificacion) return;   // el jugador ya salió de la pantalla
+
+    // Pedimos los 50 mejores por puntaje; el desempate por tiempo se hace aquí,
+    // así no hace falta crear ningún índice en Firebase.
+    const consulta = fs.query(
+      fs.collection(db, "puntajes"),
+      fs.orderBy("puntaje", "desc"),
+      fs.limit(50)
+    );
+    cancelarSuscripcion = fs.onSnapshot(
+      consulta,
+      (snap) => {
+        if(token !== tokenClasificacion) return;
+        const filas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        pintarClasificacion(filas);
+      },
+      (err) => {
+        console.error("Error leyendo la clasificación:", err);
+        estadoClasif(
+          err && err.code === "permission-denied"
+            ? "No se pudo leer la clasificación. Revisa que las reglas de Firestore estén publicadas."
+            : "No se pudo cargar la clasificación. Revisa tu conexión.",
+          "mal"
+        );
+      }
+    );
+  }catch(e){
+    console.error("Error cargando Firebase:", e);
+    if(token === tokenClasificacion){
+      estadoClasif("No se pudo conectar con la clasificación. Revisa tu conexión a internet.", "mal");
+    }
+  }
+}
+
+function crearFila(pos, d, esYo){
+  const li = document.createElement("li");
+  li.className = "fila" + (esYo ? " yo" : "") + (pos <= 3 ? ` podio p${pos}` : "");
+  const celda = (clase, texto) => {
+    const s = document.createElement("span");
+    s.className = clase;
+    s.textContent = texto;      // textContent: los nombres nunca se interpretan como HTML
+    li.appendChild(s);
+  };
+  celda("pos", pos);
+  celda("nom", String(d.nombre));
+  celda("pts", d.puntaje);
+  celda("tmp", formatoTiempo(Number(d.tiempo)));
+  return li;
+}
+
+function pintarClasificacion(filas){
+  filas.sort((a,b) => (b.puntaje - a.puntaje) || (a.tiempo - b.tiempo));
+  const lista = $("tabla-clasif");
+  lista.innerHTML = "";
+
+  if(filas.length === 0){
+    estadoClasif("Aún no hay puntajes. Sé el primero en la clasificación.", "");
+    return;
+  }
+  estadoClasif("", "");
+
+  filas.slice(0, 10).forEach((d, i) => lista.appendChild(crearFila(i + 1, d, d.id === miId)));
+
+  // Si tu puntaje quedó fuera del Top 10, mostramos tu puesto debajo
+  const miPos = filas.findIndex(d => d.id === miId);
+  if(miPos >= 10){
+    const sep = document.createElement("li");
+    sep.className = "separador";
+    sep.textContent = "···";
+    lista.appendChild(sep);
+    lista.appendChild(crearFila(miPos + 1, filas[miPos], true));
+  }
+}
+
+function cerrarClasificacion(){
+  tokenClasificacion++;
+  cerrarSuscripcion();
 }
 
 /* ============================================================
@@ -296,14 +571,6 @@ function sonido(tipo){
   }catch(e){ /* si el navegador no deja sonar, el juego sigue igual */ }
 }
 
-/* Guardar el mejor resultado en el navegador */
-function guardarRecord(n){
-  try{
-    const previo = Number(localStorage.getItem("zyrra-record") || 0);
-    if(n > previo) localStorage.setItem("zyrra-record", String(n));
-  }catch(e){}
-}
-
 /* ============================================================
    PARTE I — FONDO DE ESTRELLAS
    ============================================================ */
@@ -334,10 +601,23 @@ $("senal-inicio").innerHTML = ["luz","nave","volar"].map(k=>SIMBOLOS[k].svg).joi
 /* ============================================================
    PARTE J — BOTONES
    ============================================================ */
-$("btn-jugar").addEventListener("click", abrirNivel);
+$("btn-jugar").addEventListener("click", abrirNombre);
+$("btn-ver-clasif-inicio").addEventListener("click", () => abrirClasificacion("inicio"));
+
+$("btn-nombre-ok").addEventListener("click", confirmarNombre);
+$("btn-nombre-atras").addEventListener("click", () => mostrar("inicio"));
+$("input-nombre").addEventListener("keydown", (e) => { if(e.key === "Enter") confirmarNombre(); });
+
 $("btn-listo").addEventListener("click", abrirPregunta);
 $("btn-siguiente").addEventListener("click", siguiente);
 $("btn-continuar").addEventListener("click", continuar);
-$("btn-reiniciar").addEventListener("click", reiniciar);
+
+$("btn-reiniciar").addEventListener("click", comenzarPartida);
+$("btn-reintentar").addEventListener("click", enviarPuntaje);
+$("btn-ver-clasif-final").addEventListener("click", () => abrirClasificacion("final"));
+
+$("btn-clasif-volver").addEventListener("click", () => { cerrarClasificacion(); mostrar(origenClasificacion); });
+$("btn-clasif-jugar").addEventListener("click", () => { cerrarClasificacion(); abrirNombre(); });
+
 $("btn-glosario").addEventListener("click", abrirGlosario);
 $("btn-cerrar-glosario").addEventListener("click", ()=> $("dialogo-glosario").close());
