@@ -18,6 +18,7 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 *,*::before,*::after{ box-sizing:inherit; }
+[hidden]{ display:none !important; }
 
 html,body{ height:100%; margin:0; }
 body{
@@ -68,6 +69,9 @@ h1,h2,h3,.btn{ font-family:"Chakra Petch", "Nunito", sans-serif; }
 .btn.secundario:hover{ color:var(--texto); border-color:var(--ambar); }
 :focus-visible{ outline:3px solid var(--jade); outline-offset:3px; }
 
+/* Grupo de botones (portada y pantalla final) */
+.acciones{ display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:14px; margin-top:8px; }
+
 /* ============================================================
    4. PANTALLA DE INICIO
    ============================================================ */
@@ -85,7 +89,7 @@ h1,h2,h3,.btn{ font-family:"Chakra Petch", "Nunito", sans-serif; }
 @keyframes latir{ 0%,100%{ opacity:.35; transform:translateY(0);} 50%{ opacity:1; transform:translateY(-6px);} }
 
 /* ============================================================
-   5. BARRA DE PIEZAS (la puntuación)
+   5. BARRA DE PIEZAS (la puntuación) Y CRONÓMETRO
    ============================================================ */
 #marcador{ display:none; align-items:center; gap:12px; justify-content:space-between; }
 #marcador.activo{ display:flex; }
@@ -103,7 +107,12 @@ h1,h2,h3,.btn{ font-family:"Chakra Petch", "Nunito", sans-serif; }
   box-shadow:0 0 18px rgba(63,214,168,.3);
   transform:scale(1.06);
 }
-.nivel-info{ font-size:.9rem; color:var(--texto-suave); text-align:right; }
+.info-lado{ text-align:right; }
+.nivel-info{ font-size:.9rem; color:var(--texto-suave); white-space:pre-line; }
+.cronometro{
+  margin-top:4px; font-family:"Chakra Petch",sans-serif; font-weight:700;
+  font-size:1.15rem; color:var(--ambar); font-variant-numeric:tabular-nums;
+}
 
 /* ============================================================
    6. LOSAS Y TARJETAS
@@ -165,7 +174,52 @@ h1,h2,h3,.btn{ font-family:"Chakra Petch", "Nunito", sans-serif; }
 #nave-final{ width:min(240px, 60vw); margin:10px auto 0; display:block; color:var(--ambar); }
 #nave-final.despega{ animation:despegue 2.2s ease-in forwards; }
 @keyframes despegue{ 0%{transform:translateY(0) scale(1);} 25%{transform:translateY(8px) scale(.98);} 100%{transform:translateY(-120vh) scale(.5);} }
-.puntaje{ font-family:"Chakra Petch",sans-serif; font-size:2rem; color:var(--jade); margin:6px 0; }
+.puntaje{ font-family:"Chakra Petch",sans-serif; font-size:2.2rem; color:var(--jade); margin:6px 0 0; }
+.detalle{ color:var(--texto-suave); margin:4px 0 0; }
+
+/* ============================================================
+   9. PANTALLA DEL APODO
+   ============================================================ */
+.campo-etiqueta{ display:block; font-weight:800; margin-bottom:8px; }
+.campo{
+  width:100%; font:inherit; font-size:1.15rem; font-weight:600;
+  color:var(--texto); background:rgba(0,0,0,.25);
+  border:2px solid var(--borde); border-radius:14px; padding:14px 16px;
+}
+.campo::placeholder{ color:var(--texto-suave); opacity:.7; }
+.campo:focus{ border-color:var(--ambar); outline:none; }
+
+/* ============================================================
+   10. CLASIFICACIÓN
+   ============================================================ */
+.tabla{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.fila{
+  display:grid; grid-template-columns:40px 1fr 74px 62px; align-items:center; gap:10px;
+  padding:10px 14px; border-radius:14px;
+  background:rgba(0,0,0,.22); border:1px solid var(--borde);
+}
+.fila.cab{
+  background:none; border:none; padding:0 14px 8px;
+  color:var(--texto-suave); font-size:.85rem; font-weight:800;
+}
+.fila .pos{ font-family:"Chakra Petch",sans-serif; font-weight:700; color:var(--texto-suave); }
+.fila .nom{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fila .pts{ font-family:"Chakra Petch",sans-serif; font-weight:700; color:var(--ambar); text-align:right; }
+.fila .tmp{ color:var(--texto-suave); text-align:right; font-variant-numeric:tabular-nums; }
+.fila.cab .pts, .fila.cab .tmp{ color:var(--texto-suave); font-family:inherit; }
+.fila.podio.p1{ border-color:var(--ambar); background:rgba(255,181,71,.12); }
+.fila.podio.p1 .pos{ color:var(--ambar); }
+.fila.podio.p2{ border-color:#c9c2dd; }
+.fila.podio.p2 .pos{ color:#c9c2dd; }
+.fila.podio.p3{ border-color:#c98a5a; }
+.fila.podio.p3 .pos{ color:#c98a5a; }
+.fila.yo{ border-color:var(--jade); background:rgba(63,214,168,.14); box-shadow:0 0 18px rgba(63,214,168,.25); }
+.fila.yo .nom::after{ content:" (tú)"; color:var(--jade); font-weight:600; }
+.separador{ text-align:center; color:var(--texto-suave); letter-spacing:.3em; line-height:1; }
+
+@media (max-width:420px){
+  .fila{ grid-template-columns:30px 1fr 62px 52px; gap:6px; padding:10px; }
+}
 
 /* Ventana del glosario */
 dialog{
